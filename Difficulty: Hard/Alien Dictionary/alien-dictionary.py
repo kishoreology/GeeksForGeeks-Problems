@@ -1,106 +1,107 @@
 #User function Template for python3
-
-from typing import List
-from collections import deque, defaultdict
-
 class Solution:
-    def findOrder(self, dict: List[str], n: int, k: int) -> str:
-        # Your implementation here
-        # Step 1: Build the graph
-        graph = defaultdict(set)
-        in_degree = defaultdict(int)
-        all_chars = set()
+    def findOrder(words):
+        # code here
+        from collections import defaultdict
+        from itertools import product
         
-        # Initialize the graph and in-degrees
-        for word in dict:
-            for char in word:
-                if char not in in_degree:
-                    in_degree[char] = 0
-                all_chars.add(char)
+        g = defaultdict(set)
+        n = len(words)
+        chars = set(words[-1])
+        for i in range(n-1):
+            chars.update(words[i])
+            for j in range(i+1, n):
+                w1, w2 = words[i], words[j]
+                for k in range(min(len(w1), len(w2))):
+                    if w1[k] != w2[k]:
+                        g[w1[k]].add(w2[k])
+                        break
+                else:
+                    if len(w1) > len(w2):
+                        return ""
+                
         
-        # Create edges between characters based on the dictionary order
-        for i in range(len(dict) - 1):
-            w1, w2 = dict[i], dict[i+1]
-            min_length = min(len(w1), len(w2))
+        visited, on_stack = set(), set()
+        result = []
+        
+        def dfs(n):
+            if n in on_stack:
+                return True 
+            if n in visited:
+                return False
             
-            # Find the first differing character
-            for j in range(min_length):
-                if w1[j] != w2[j]:
-                    if w2[j] not in graph[w1[j]]:
-                        graph[w1[j]].add(w2[j])
-                        in_degree[w2[j]] += 1
-                    break
-        
-        # Step 2: Perform topological sort using Kahn’s Algorithm
-        queue = deque([char for char in all_chars if in_degree[char] == 0])
-        order = []
-        
-        while queue:
-            char = queue.popleft()
-            order.append(char)
+            on_stack.add(n)
+            for nbr in g.get(n, []):
+                if dfs(nbr):
+                    return True
+            on_stack.remove(n)
+            visited.add(n)
+            result.append(n)
             
-            for neighbor in graph[char]:
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    queue.append(neighbor)
-        
-        # Check if we got a valid topological sort
-        if len(order) != len(all_chars):
-            return ""  # Cycle detected or not all characters included
-        
-        return ''.join(order)
-
-
+        for n in g.keys():
+            if n not in visited:
+                if dfs(n):
+                    return ""
+ 
+        result.extend(chars - set(result))
+        return "".join(reversed(result))
 
 
 #{ 
  # Driver Code Starts
 #Initial Template for Python 3
+import sys
+from collections import deque
+
+#Position this line where user code will be pasted.
 
 
-class sort_by_order:
+def validate(original, order):
+    char_map = {}
+    for word in original:
+        for ch in word:
+            char_map[ch] = 1
 
-    def __init__(self, s):
-        self.priority = {}
-        for i in range(len(s)):
-            self.priority[s[i]] = i
+    for ch in order:
+        if ch not in char_map:
+            return False
+        del char_map[ch]
 
-    def transform(self, word):
-        new_word = ''
-        for c in word:
-            new_word += chr(ord('a') + self.priority[c])
-        return new_word
+    if char_map:
+        return False
 
-    def sort_this_list(self, lst):
-        lst.sort(key=self.transform)
+    char_index = {ch: i for i, ch in enumerate(order)}
+
+    for i in range(len(original) - 1):
+        a, b = original[i], original[i + 1]
+        k, n, m = 0, len(a), len(b)
+        while k < n and k < m and a[k] == b[k]:
+            k += 1
+        if k < n and k < m and char_index[a[k]] > char_index[b[k]]:
+            return False
+        if k != n and k == m:
+            return False
+
+    return True
 
 
-if __name__ == '__main__':
-    t = int(input())
-    for _ in range(t):
-        line = input().strip().split()
-        n = int(line[0])
-        k = int(line[1])
+if __name__ == "__main__":
+    input_data = sys.stdin.read().strip().split("\n")
+    index = 0
+    t = int(input_data[index])
+    index += 1
+    while t > 0:
+        words = input_data[index].split()
+        index += 1
+        original = words[:]
 
-        alien_dict = [x for x in input().strip().split()]
-        duplicate_dict = alien_dict.copy()
-        ob = Solution()
-        order = ob.findOrder(alien_dict, n, k)
-        s = ""
-        for i in range(k):
-            s += chr(97 + i)
-        l = list(order)
-        l.sort()
-        l = "".join(l)
-        if s != l:
-            print(0)
+        order = Solution.findOrder(words)
+
+        if order == "":
+            print("\"\"")
         else:
-            x = sort_by_order(order)
-            x.sort_this_list(duplicate_dict)
-
-            if duplicate_dict == alien_dict:
-                print(1)
-            else:
-                print(0)
+            print("true" if validate(original, order) else "false")
+        print("~")
+        t -= 1
 
 # } Driver Code Ends
